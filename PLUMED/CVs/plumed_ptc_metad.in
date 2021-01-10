@@ -1,0 +1,103 @@
+
+## restart with previous HILLS file:
+#RESTART
+
+# default units are LENGTH=nm ENERGY=kJ/mol TIME=ps
+UNITS LENGTH=A TIME=ps ENERGY=kcal/mol
+
+
+## oxygen-oxygen distance:
+doo: DISTANCE ATOMS=1,2 
+
+
+##################################################
+###  PREPARE SOFTMIN PT COORDINATE  ##############
+
+## define O-H distances:
+o1h1: DISTANCE ATOMS=1,3
+o1h2: DISTANCE ATOMS=1,4
+o1h3: DISTANCE ATOMS=1,5
+o1h4: DISTANCE ATOMS=1,6
+o1h5: DISTANCE ATOMS=1,7
+o2h1: DISTANCE ATOMS=2,3
+o2h2: DISTANCE ATOMS=2,4
+o2h3: DISTANCE ATOMS=2,5
+o2h4: DISTANCE ATOMS=2,6
+o2h5: DISTANCE ATOMS=2,7
+
+## define potential proton transfer coordinates:
+ptc1: COMBINE ARG=o1h1,o2h1 COEFFICIENTS=1,-1 PERIODIC=NO
+ptc2: COMBINE ARG=o1h2,o2h2 COEFFICIENTS=1,-1 PERIODIC=NO
+ptc3: COMBINE ARG=o1h3,o2h3 COEFFICIENTS=1,-1 PERIODIC=NO
+ptc4: COMBINE ARG=o1h4,o2h4 COEFFICIENTS=1,-1 PERIODIC=NO
+ptc5: COMBINE ARG=o1h5,o2h5 COEFFICIENTS=1,-1 PERIODIC=NO
+
+#================================================#
+#================================================#
+
+
+
+##################################################
+###  SOFTMIN PT COORDINATE 1  ####################
+
+#!# this softmin has problems when all arguments are large
+#!# (each exp evaluates to 0.0, which gives log(0.0)...)
+
+## softmin:
+MATHEVAL ...
+  LABEL=smptc1
+  ARG=ptc1,ptc2,ptc3,ptc4,ptc5
+  VAR=x1,x2,x3,x4,x5
+  FUNC=((-1.0/200.0)*log(exp(-200.0*abs(x1))+exp(-200.0*abs(x2))+exp(-200.0*abs(x3))+exp(-200.0*abs(x4))+exp(-200.0*abs(x5))))
+  PERIODIC=NO
+... MATHEVAL
+
+#================================================#
+#================================================#
+
+
+##################################################
+###  SOFTMIN PT COORDINATE 2  ####################
+
+#!# have to shift each argument (+1.0) to avoid exp(500.0 / 0.0)
+
+## softmin:
+MATHEVAL ...
+  LABEL=smptc2
+  ARG=ptc1,ptc2,ptc3,ptc4,ptc5
+  VAR=x1,x2,x3,x4,x5
+  FUNC=(500.0/log(exp(500.0/(abs(x1)+1.0))+exp(500.0/(abs(x2)+1.0))+exp(500.0/(abs(x3)+1.0))+exp(500.0/(abs(x4)+1.0))+exp(500.0/(abs(x5)+1.0))))-1.0
+  PERIODIC=NO
+... MATHEVAL
+
+#================================================#
+#================================================#
+
+
+
+
+##################################################
+###  METADYNAMICS  ###############################
+
+# BIASFACTOR -> 0: unbiased MD;  BIASFACTOR -> inf: standard MetaD
+mtd:   METAD ARG=smptc2 PACE=500 SIGMA=0.01 HEIGHT=0.05 FILE=plumed/HILLS BIASFACTOR=20 TEMP=300
+
+
+## harmonic 'walls':
+uwall: UPPER_WALLS ARG=smptc2 AT=6 KAPPA=250
+
+
+#PRINT ARG=doo,smptc2,mtd.* STRIDE=100 FILE=plumed/COLVAR
+PRINT ARG=doo,smptc2,mtd.*,uwall.* STRIDE=100 FILE=plumed/COLVAR
+
+
+## debug smptc:
+PRINT ARG=smptc2,ptc1,ptc2,ptc3,ptc4,ptc5 STRIDE=100 FILE=plumed/PTC
+#PRINT ARG=smptc1,smptc2,ptc1,ptc2,ptc3,ptc4,ptc5 STRIDE=100 FILE=plumed/PTC
+
+#================================================#
+#================================================#
+
+
+FLUSH STRIDE=1
+

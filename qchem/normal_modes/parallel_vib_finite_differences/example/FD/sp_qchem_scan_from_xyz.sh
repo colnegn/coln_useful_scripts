@@ -1,0 +1,1 @@
+/home/ckegan/scripts/qchem/gen_scan/sp_qchem_scan_from_xyz.sh

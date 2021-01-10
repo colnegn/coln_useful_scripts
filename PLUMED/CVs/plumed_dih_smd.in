@@ -1,0 +1,251 @@
+
+## restart with previous HILLS file:
+#RESTART
+
+# default units are LENGTH=nm ENERGY=kJ/mol TIME=ps
+UNITS LENGTH=A TIME=ps ENERGY=kcal/mol
+
+
+
+orig: FIXEDATOM AT=0.0,0.0,0.0
+
+po1: DISTANCE ATOMS=orig,1 COMPONENTS NOPBC
+po2: DISTANCE ATOMS=orig,2 COMPONENTS NOPBC
+
+do1h1: DISTANCE ATOMS=1,3 COMPONENTS NOPBC
+do1h2: DISTANCE ATOMS=1,4 COMPONENTS NOPBC
+do2h3: DISTANCE ATOMS=2,6 COMPONENTS NOPBC
+do2h4: DISTANCE ATOMS=2,7 COMPONENTS NOPBC
+
+ddo1h1: DISTANCE ATOMS=1,3 NOPBC
+ddo1h2: DISTANCE ATOMS=1,4 NOPBC
+ddo2h3: DISTANCE ATOMS=2,6 NOPBC
+ddo2h4: DISTANCE ATOMS=2,7 NOPBC
+
+
+doo: DISTANCE ATOMS=1,2 COMPONENTS NOPBC
+
+ddoo: DISTANCE ATOMS=1,2 NOPBC
+
+
+#PRINT ARG=po1.x,do1h1.x,do1h2.x,ddo1h1,ddo1h2 STRIDE=1 FILE=plumed/VARVALS
+
+
+## x,y,z components of first bisector:
+B1x: ...
+  CUSTOM
+  ARG=po1.x,do1h1.x,do1h2.x,ddo1h1,ddo1h2
+  VAR=o1,h1,h2,d1,d2
+  FUNC=(0.5*((h1/d1)+(h2/d2)))+o1
+  PERIODIC=NO
+...
+
+B1y: ...
+  CUSTOM
+  ARG=po1.y,do1h1.y,do1h2.y,ddo1h1,ddo1h2
+  VAR=o1,h1,h2,d1,d2
+  FUNC=(0.5*((h1/d1)+(h2/d2)))+o1
+  PERIODIC=NO
+...
+
+B1z: ...
+  CUSTOM
+  ARG=po1.z,do1h1.z,do1h2.z,ddo1h1,ddo1h2
+  VAR=o1,h1,h2,d1,d2
+  FUNC=(0.5*((h1/d1)+(h2/d2)))+o1
+  PERIODIC=NO
+...
+
+
+## x,y,z components of second bisector:
+B2x: ...
+  CUSTOM
+  ARG=po2.x,do2h3.x,do2h4.x,ddo2h3,ddo2h4
+  VAR=o1,h1,h2,d1,d2
+  FUNC=(0.5*((h1/d1)+(h2/d2)))+o1
+  PERIODIC=NO
+...
+
+B2y: ...
+  CUSTOM
+  ARG=po2.y,do2h3.y,do2h4.y,ddo2h3,ddo2h4
+  VAR=o1,h1,h2,d1,d2
+  FUNC=(0.5*((h1/d1)+(h2/d2)))+o1
+  PERIODIC=NO
+...
+
+B2z: ...
+  CUSTOM
+  ARG=po2.z,do2h3.z,do2h4.z,ddo2h3,ddo2h4
+  VAR=o1,h1,h2,d1,d2
+  FUNC=(0.5*((h1/d1)+(h2/d2)))+o1
+  PERIODIC=NO
+...
+
+
+## normal to OH1-OO
+n1x: ...
+  CUSTOM
+  ARG=B1y,B1z,po1.y,po1.z,doo.y,doo.z
+  VAR=a2,a3,b2,b3,c2,c3
+  FUNC=((b2-a2)*c3)-((b3-a3)*c2)
+  PERIODIC=NO
+...
+
+n1y: ...
+  CUSTOM
+  ARG=B1x,B1z,po1.x,po1.z,doo.x,doo.z
+  VAR=a1,a3,b1,b3,c1,c3
+  FUNC=((b3-a3)*c1)-((b1-a1)*c3)
+  PERIODIC=NO
+...
+
+n1z: ...
+  CUSTOM
+  ARG=B1x,B1y,po1.x,po1.y,doo.x,doo.y
+  VAR=a1,a2,b1,b2,c1,c2
+  FUNC=((b1-a1)*c2)-((b2-a2)*c1)
+  PERIODIC=NO
+...
+
+## magnitude of n1:
+nn1: ...
+  CUSTOM
+  ARG=n1x,n1y,n1z
+  VAR=a,b,c
+  FUNC=sqrt((a*a)+(b*b)+(c*c))
+  PERIODIC=NO
+...
+
+
+## normal to OO-OH2
+n2x: ...
+  CUSTOM
+  ARG=B2y,B2z,po2.y,po2.z,doo.y,doo.z
+  VAR=a2,a3,b2,b3,c2,c3
+  FUNC=((a3-b3)*c2)-((a2-b2)*c3)
+  PERIODIC=NO
+...
+
+n2y: ...
+  CUSTOM
+  ARG=B2x,B2z,po2.x,po2.z,doo.x,doo.z
+  VAR=a1,a3,b1,b3,c1,c3
+  FUNC=((a1-b1)*c3)-((a3-b3)*c1)
+  PERIODIC=NO
+...
+
+n2z: ...
+  CUSTOM
+  ARG=B2x,B2y,po2.x,po2.y,doo.x,doo.y
+  VAR=a1,a2,b1,b2,c1,c2
+  FUNC=((a2-b2)*c1)-((a1-b1)*c2)
+  PERIODIC=NO
+...
+
+## magnitude of n1:
+nn2: ...
+  CUSTOM
+  ARG=n2x,n2y,n2z
+  VAR=a,b,c
+  FUNC=sqrt((a*a)+(b*b)+(c*c))
+  PERIODIC=NO
+...
+
+
+## normal to n1-OO
+mx: ...
+  CUSTOM
+  ARG=n1y,n1z,doo.y,doo.z,ddoo,nn1
+  VAR=a2,a3,c2,c3,dc,nn
+  FUNC=((a2/nn)*(c3/dc))-((a3/nn)*(c2/dc))
+  PERIODIC=NO
+...
+
+my: ...
+  CUSTOM
+  ARG=n1x,n1z,doo.x,doo.z,ddoo,nn1
+  VAR=a1,a3,c1,c3,dc,nn
+  FUNC=((a3/nn)*(c1/dc))-((a1/nn)*(c3/dc))
+  PERIODIC=NO
+...
+
+mz: ...
+  CUSTOM
+  ARG=n1x,n1y,doo.x,doo.y,ddoo,nn1
+  VAR=a1,a2,c1,c2,dc,nn
+  FUNC=((a1/nn)*(c2/dc))-((a2/nn)*(c1/dc))
+  PERIODIC=NO
+...
+
+
+## dot products:
+dpx: ...
+  CUSTOM
+  ARG=n1x,n1y,n1z,n2x,n2y,n2z,nn1,nn2
+  VAR=a1,a2,a3,b1,b2,b3,d1,d2
+  FUNC=((a1*b1)+(a2*b2)+(a3*b3))/(d1*d2)
+  PERIODIC=NO
+...
+
+dpy: ...
+  CUSTOM
+  ARG=mx,my,mz,n2x,n2y,n2z,nn2
+  VAR=a1,a2,a3,b1,b2,b3,d2
+  FUNC=((a1*b1)+(a2*b2)+(a3*b3))/d2
+  PERIODIC=NO
+...
+
+
+## FINALLY get dihedral from atan2:
+zdih: ...
+  CUSTOM
+  ARG=dpx,dpy
+  VAR=x,y
+  FUNC=atan2(y,x)
+  PERIODIC=NO
+...
+
+#PRINT ARG=B1x,B1y,B1z,B2x,B2y,B2z,n1x,n1y,n1z,n2x,n2y,n2z,mx,my,mz,dpx,dpy,zdih STRIDE=1 FILE=plumed/DEBUG
+
+
+##################################################
+###  UMBRELLA SAMPLING  ##########################
+
+## see:
+## https://www.plumed.org/doc-v2.5/user-doc/html/_r_e_s_t_r_a_i_n_t.html
+
+#!# KAPPA = (1/x^2) * (2 * V_bias(x))
+#!# want a bias of 0.4 kcal/mol 0.05 Ang away from minimum of harm potential (min at 2.5 Ang) => KAPPA = 320
+#harmbias: RESTo2o1h1NT ARG=doo AT=2.5 KAPPA=320.0
+
+
+
+
+### SMD for flanking-HOH-bisector dihedral angle (B-O-O-B):
+harmbias: ...
+        MOVINGRESTRAINT
+        ARG=zdih
+        AT0=0.67 STEP0=0        KAPPA0=0
+        AT1=0.67 STEP1=250000   KAPPA1=20
+        AT2=1.80 STEP2=1250000  KAPPA2=20
+        AT3=1.80 STEP3=2000000  KAPPA3=20
+...
+
+
+
+
+
+PRINT ARG=zdih,harmbias.* STRIDE=20 FILE=plumed/COLVAR
+#PRINT ARG=o2o1h1,o2o1h2,o1o2h3,o1o2h4,harmbias1.*,harmbias2.*,harmbias3.*,harmbias4.* STRIDE=1 FILE=plumed/COLVAR
+
+#================================================#
+#================================================#
+
+
+
+
+
+FLUSH STRIDE=20
+
+
